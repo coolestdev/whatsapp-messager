@@ -1,5 +1,6 @@
 package com.masteryoim.whatsapp.whatsapp;
 
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
@@ -54,24 +55,19 @@ public class WhatsappWebAgent {
         remoteWebDriver.quit();
     }
 
-    public Boolean sendMsg(String phoneNo, String msg) {
-        logger.info("sendMsg [{}] to [{}]", msg, phoneNo);
+    public Boolean sendMsg(String phoneNumber, String msg) {
+        logger.info("sendMsg [{}] to [{}]", msg, phoneNumber);
 
         if(!isLoggedIn()) {
             return false;
         }
 
-        if(phoneNo==null) {
-            logger.error("Phone No is null");
+        if(!StringUtils.isNumeric(phoneNumber)) {
+            logger.error("Phone number [{}] is not in correct format", phoneNumber);
             return false;
         }
 
-        if(!phoneNo.matches(MOBILE_REGEX)) {
-            logger.error("Contact No is not in correct format");
-            return false;
-        }
-
-        String apiUrl = String.format(SEND_MSG_SYNTAX, phoneNo, msg);
+        String apiUrl = String.format(SEND_MSG_SYNTAX, phoneNumber, msg);
         remoteWebDriver.navigate().to(apiUrl);
 
         /*try {

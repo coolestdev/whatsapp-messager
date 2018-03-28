@@ -33,6 +33,7 @@ dependencies {
 	compile('org.springframework.boot:spring-boot-starter-web')
 	compile group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '3.11.0'
 	compile group: 'org.seleniumhq.selenium', name: 'selenium-remote-driver', version: '3.11.0'
+	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.1'
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 	testCompile('org.springframework.security:spring-security-test')
 }
