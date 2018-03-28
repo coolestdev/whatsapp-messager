@@ -71,7 +71,6 @@ public class WhatsappWebAgent {
             return false;
         }
 
-        phoneNo = "852" + phoneNo;
         String apiUrl = String.format(SEND_MSG_SYNTAX, phoneNo, msg);
         remoteWebDriver.navigate().to(apiUrl);
 
