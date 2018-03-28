@@ -1,4 +1,4 @@
-package com.masteryoim.whatsapp.whatsapp;
+package com.masteryoim.whatsapp.service;
 
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
@@ -23,7 +23,7 @@ import java.util.Collections;
 
 @Service
 public class WhatsappWebAgent {
-    private static final Logger logger = LoggerFactory.getLogger(WhatsappWebAgent.class);
+    private static final Logger log = LoggerFactory.getLogger(WhatsappWebAgent.class);
     private static final String WHATSAPP_SITE = "https://web.whatsapp.com/";
     private static final String WHATSAPP_API = "https://web.whatsapp.com";
     private static final String SEND_MSG_SYNTAX = WHATSAPP_API + "/send?phone=%s&text=%s";
@@ -33,22 +33,19 @@ public class WhatsappWebAgent {
     private static final String INVALID_PHONE_BUTTON_DIV_CLASS = "_3QNwO";
     private static final String INVALID_PHONE_BUTTON_XPATH = "//div[@role=\"button\"]";
     private static final String START_UP_ID = "startup";
-    private static final String MOBILE_REGEX = "^[0-9]{15}";
 
     @Value("${chromedrive.path}")
     private String chromeDrivePath;
     private RemoteWebDriver remoteWebDriver = null;
 
-	/*public static void main(String[] args){
-		WhatsappWebAgent agent = new WhatsappWebAgent("C:\\selenium\\chromedriver.exe");
-		agent.init();
-		logger.info(agent.sendMsg("8529684", "testing").toString());
-	}*/
-
     @PostConstruct
-    public void init(){
-        System.setProperty("webdriver.chrome.driver", this.chromeDrivePath);
-        remoteWebDriver = getExistingRemoteDriver();
+    public void init() {
+        try {
+            System.setProperty("webdriver.chrome.driver", this.chromeDrivePath);
+            remoteWebDriver = getExistingRemoteDriver();
+        } catch (Exception e) {
+            log.error("Error in init remote driver", e);
+        }
     }
 
     public void close(){
@@ -56,14 +53,14 @@ public class WhatsappWebAgent {
     }
 
     public Boolean sendMsg(String phoneNumber, String msg) {
-        logger.info("sendMsg [{}] to [{}]", msg, phoneNumber);
+        log.info("sendMsg [{}] to [{}]", msg, phoneNumber);
 
         if(!isLoggedIn()) {
             return false;
         }
 
         if(!StringUtils.isNumeric(phoneNumber)) {
-            logger.error("Phone number [{}] is not in correct format", phoneNumber);
+            log.error("Phone number [{}] is not in correct format", phoneNumber);
             return false;
         }
 
@@ -98,7 +95,7 @@ public class WhatsappWebAgent {
             send.click();
         } catch(NoSuchElementException e1) {
             //if the send button cannot be found, an error message should have pop up
-            logger.error("cannot find the send button");
+            log.error("cannot find the send button");
 
             try{
                 (new WebDriverWait(remoteWebDriver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.className(INVALID_PHONE_BUTTON_DIV_CLASS)));
@@ -106,7 +103,7 @@ public class WhatsappWebAgent {
                 WebElement invalid = invalidDiv.findElement(By.xpath(INVALID_PHONE_BUTTON_XPATH));
                 invalid.click();
             } catch(NoSuchElementException e2) {
-                logger.error("cannot find the invalid button");
+                log.error("cannot find the invalid button");
                 return false;
             }
 
@@ -114,34 +111,6 @@ public class WhatsappWebAgent {
         }
 
         return true;
-    }
-
-    public String getLoginBarCode(){
-
-        if(isLoggedIn()){
-            logger.info("is logged in");
-            return null;
-        }
-
-        reload();
-
-        WebElement img = null;
-
-        try{
-
-            img  = remoteWebDriver.findElement(By.xpath(LOGIN_BARCODE_IMG_XPATH));
-
-        }catch(NoSuchElementException e){
-            logger.error("Login barcode image element cannot be found");
-            return null;
-        }
-
-        if(img==null){
-            logger.warn("is logged in");
-            return null;
-        }
-
-        return img.getAttribute("src");
     }
 
     //check if the screen contain the element with id = side
@@ -153,59 +122,40 @@ public class WhatsappWebAgent {
                 return true;
             }
         } catch(NoSuchElementException e) {
-            logger.error("Element with id=side cannnot be found");
+            log.error("Element with id=side cannnot be found");
         }
 
         return false;
     }
 
-    //reload the whatsapp page and wail for the appear of login barcode
-    private void reload(){
-        remoteWebDriver.navigate().to(WHATSAPP_SITE);
-        (new WebDriverWait(remoteWebDriver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(LOGIN_BARCODE_IMG_XPATH)));
-    }
-
-    private static RemoteWebDriver getExistingRemoteDriver(){
-
+    private static RemoteWebDriver getExistingRemoteDriver() {
         RemoteWebDriver driver = null;
 
         SessionId sessionId = deserializeSessionId();
         URL url = deserializeUrl();
 
-        if(sessionId!=null && url!=null){
-
+        if(sessionId!=null && url!=null) {
             driver = createDriverFromSession(sessionId, url);
 
             //test the driver, if the driver not found it will throw exception
-            try{
-
+            try {
                 String currentUrl = driver.getCurrentUrl();
-
-                if(currentUrl.equals(WHATSAPP_SITE)){
-
-                    try{
-
+                if(currentUrl.equals(WHATSAPP_SITE)) {
+                    try {
                         driver.findElement(By.id("side"));
-
-                        logger.info("whatapp is logged in");
-
-                    }catch(NoSuchElementException e){
-                        logger.error("whatapp is not logged in");
+                        log.info("whatapp is logged in");
+                    } catch(NoSuchElementException e) {
+                        log.error("whatapp is not logged in");
                         loadWhatsappPage(driver);
-
                     }
-
-                }else{
+                } else {
                     loadWhatsappPage(driver);
                 }
-
-            }catch(Exception e){
-
-                logger.error(e.getMessage());
-                e.printStackTrace();
+            } catch(Exception e) {
+                log.error(e.getMessage(), e);
                 driver = createNewRemoteDriver();
             }
-        }else{
+        } else {
             driver = createNewRemoteDriver();
         }
 
@@ -213,27 +163,18 @@ public class WhatsappWebAgent {
     }
 
     private static void loadWhatsappPage(RemoteWebDriver driver){
-
         driver.navigate().to(WHATSAPP_SITE);
-
         (new WebDriverWait(driver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(LOGIN_BARCODE_IMG_XPATH)));
-
     }
 
-    private static RemoteWebDriver createNewRemoteDriver(){
-
+    private static RemoteWebDriver createNewRemoteDriver() {
         RemoteWebDriver driver = new ChromeDriver();
-
         loadWhatsappPage(driver);
-
         serializeSessionId(driver.getSessionId());
-
         HttpCommandExecutor executor = (HttpCommandExecutor) driver.getCommandExecutor();
-
         serializeUrl(executor.getAddressOfRemoteServer());
 
         return driver;
-
     }
 
     private static void serializeSessionId(SessionId sessionId){
@@ -243,9 +184,9 @@ public class WhatsappWebAgent {
             out.writeObject(sessionId.toString());
             out.close();
             fileOut.close();
-            logger.info("Serialized sessionId is saved");
-        } catch (IOException i) {
-            i.printStackTrace();
+            log.info("Serialized sessionId is saved");
+        } catch (IOException e) {
+            log.error("Error serialize session id", e);
         }
     }
 
@@ -256,9 +197,9 @@ public class WhatsappWebAgent {
             out.writeObject(url);
             out.close();
             fileOut.close();
-            logger.info("Serialized url is saved");
-        } catch (IOException i) {
-            i.printStackTrace();
+            log.info("Serialized url is saved");
+        } catch (IOException e) {
+            log.error("Error in serialize url", e);
         }
     }
 
@@ -271,11 +212,10 @@ public class WhatsappWebAgent {
             sessionId = new SessionId(sessionStr);
             in.close();
             fileIn.close();
-        } catch (IOException i) {
-            i.printStackTrace();
-        } catch (ClassNotFoundException c) {
-            logger.error("sessionId.ser not found");
-            c.printStackTrace();
+        } catch (IOException e) {
+            log.error("Error in deserialize session id", e);
+        } catch (ClassNotFoundException e) {
+            log.error("sessionId.ser not found", e);
         }
         return sessionId;
     }
@@ -288,11 +228,10 @@ public class WhatsappWebAgent {
             url = (URL) in.readObject();
             in.close();
             fileIn.close();
-        } catch (IOException i) {
-            i.printStackTrace();
-        } catch (ClassNotFoundException c) {
-            logger.error("url.ser not found");
-            c.printStackTrace();
+        } catch (IOException e) {
+            log.error("Error in deserialize url", e);
+        } catch (ClassNotFoundException e) {
+            log.error("url.ser not found", e);
         }
         return url;
     }
@@ -321,12 +260,9 @@ public class WhatsappWebAgent {
                         responseCodec = this.getClass().getSuperclass().getDeclaredField("responseCodec");
                         responseCodec.setAccessible(true);
                         responseCodec.set(this, new JsonHttpResponseCodec());
-                    } catch (NoSuchFieldException e) {
-                        e.printStackTrace();
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                        log.error("Error in create driver from session", e);
                     }
-
                 } else {
                     response = super.execute(command);
                 }
