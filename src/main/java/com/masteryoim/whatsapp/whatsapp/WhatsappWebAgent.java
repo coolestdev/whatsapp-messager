@@ -32,7 +32,7 @@ public class WhatsappWebAgent {
     private static final String INVALID_PHONE_BUTTON_DIV_CLASS = "_3QNwO";
     private static final String INVALID_PHONE_BUTTON_XPATH = "//div[@role=\"button\"]";
     private static final String START_UP_ID = "startup";
-    private static final String MOBILE_REGEX = "^[0-9]{8}";
+    private static final String MOBILE_REGEX = "^[0-9]{15}";
 
     @Value("${chromedrive.path}")
     private String chromeDrivePath;
