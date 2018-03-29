@@ -3,6 +3,7 @@ package com.masteryoim.whatsapp.service;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.UnhandledAlertException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.remote.*;
@@ -90,10 +91,13 @@ public class WhatsappWebAgent {
 
         //after the page load, if the phone is correct, the send button should show
         try{
-            (new WebDriverWait(remoteWebDriver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.className(SEND_BUTTON_CLASS)));
-            WebElement send = remoteWebDriver.findElement(By.className(SEND_BUTTON_CLASS));
-            send.click();
-        } catch(NoSuchElementException e1) {
+            clickSend();
+            return true;
+        } catch (UnhandledAlertException e) {
+            remoteWebDriver.switchTo().alert().accept();
+            clickSend();
+            return true;
+        } catch(NoSuchElementException e) {
             //if the send button cannot be found, an error message should have pop up
             log.error("cannot find the send button");
 
@@ -109,8 +113,12 @@ public class WhatsappWebAgent {
 
             return false;
         }
+    }
 
-        return true;
+    private void clickSend() {
+        (new WebDriverWait(remoteWebDriver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.className(SEND_BUTTON_CLASS)));
+        WebElement send = remoteWebDriver.findElement(By.className(SEND_BUTTON_CLASS));
+        send.click();
     }
 
     //check if the screen contain the element with id = side
