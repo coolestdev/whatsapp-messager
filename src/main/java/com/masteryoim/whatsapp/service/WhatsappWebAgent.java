@@ -94,6 +94,7 @@ public class WhatsappWebAgent {
             clickSend();
             return true;
         } catch (UnhandledAlertException e) {
+            log.info("Accept unhandled alert");
             remoteWebDriver.switchTo().alert().accept();
             clickSend();
             return true;
