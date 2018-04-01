@@ -1,4 +1,4 @@
-# whatsapp-messager
+# whatsapp-messager [![CircleCI](https://circleci.com/gh/thcathy/whatsapp-messager/tree/master.svg?style=svg)](https://circleci.com/gh/thcathy/whatsapp-messager/tree/master)
 Send WhatsApp message by web interface through selenium test.
 
 ## Prerequisite
