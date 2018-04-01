@@ -1,0 +1,76 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/code
+    docker:
+      - image: circleci/openjdk:8-jdk
+        environment:
+              TERM: dumb
+    environment:
+      JVM_OPTS: -Xmx3200m
+    steps:
+      - checkout
+      - restore_cache:
+          key: whatsapp-messager-{{ checksum "build.gradle" }}
+      - run:
+          name: Download Dependencies
+          command: ./gradlew dependencies
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: whatsapp-messager-{{ checksum "build.gradle" }}
+      - run:
+          name: Run Tests
+          command: ./gradlew check
+      - run:
+          name: Save test results 
+          command: |
+            mkdir -p ~/junit/
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/junit/ \;
+          when: always
+      - store_test_results:
+          path: ~/junit
+      - store_artifacts:
+          path: ~/junit
+      - run:
+          name: Build Artifacts
+          command: ./gradlew assemble
+      - persist_to_workspace:
+          root: ~/
+          paths: 
+            - code
+  deploy:
+    working_directory: ~/code
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:      
+      - attach_workspace:
+          at: ~/
+      - setup_remote_docker
+      - run: |
+          TAG=1.0.$CIRCLE_BUILD_NUM          
+          docker build -t thcathy/whatsapp-messager:latest -t thcathy/whatsapp-messager:$TAG .
+          docker login -u $DOCKER_USER -p $DOCKER_PASS
+          docker push thcathy/whatsapp-messager:latest
+          docker push thcathy/whatsapp-messager:$TAG
+workflows:
+  version: 2
+  commit-workflow:
+    jobs:
+      - build 
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
+  scheduled-workflow:
+    triggers:
+      - schedule:
+          cron: "20 5 * * 5"
+          filters:
+            branches:
+              only: 
+                - master
+    jobs:
+      - build
