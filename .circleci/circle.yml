@@ -32,6 +32,8 @@ jobs:
           path: ~/junit
       - store_artifacts:
           path: ~/junit
+      - store_artifacts:
+          path: ~/build
       - run:
           name: Build Artifacts
           command: ./gradlew assemble
@@ -46,13 +48,8 @@ jobs:
     steps:      
       - attach_workspace:
           at: ~/
-      - setup_remote_docker
-      - run: |
-          TAG=1.0.$CIRCLE_BUILD_NUM          
-          docker build -t thcathy/whatsapp-messager:latest -t thcathy/whatsapp-messager:$TAG .
-          docker login -u $DOCKER_USER -p $DOCKER_PASS
-          docker push thcathy/whatsapp-messager:latest
-          docker push thcathy/whatsapp-messager:$TAG
+      - run:
+          command: scp -o StrictHostKeyChecking=no -P $DEPLOYMENT_PORT ~/build/libs/*.jar $DEPLOYMENT_URL
 workflows:
   version: 2
   commit-workflow:
