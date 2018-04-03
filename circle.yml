@@ -33,7 +33,7 @@ jobs:
       - store_artifacts:
           path: ~/junit
       - store_artifacts:
-          path: ~/build
+          path: ~/code/build/libs
       - run:
           name: Build Artifacts
           command: ./gradlew assemble
