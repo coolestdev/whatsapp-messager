@@ -12,4 +12,7 @@ Send WhatsApp message by web interface through selenium test.
 1. Start server
   java -jar whatsapp-messager.jar
 2. Login whatsapp by scanning barcode on opened browser
-3. Send message on http://<host>:<port>/send/<message>/to/<phone number>
+3. Send message by
+```bash
+http://<host>:<port>/sendto/<phone number>?message=<message to send>
+```
