@@ -33,7 +33,7 @@ jobs:
       - store_artifacts:
           path: ~/junit
       - store_artifacts:
-          path: ~/code/build/libs
+          path: ./build/libs
       - run:
           name: Build Artifacts
           command: ./gradlew assemble
@@ -49,7 +49,7 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          command: scp -o StrictHostKeyChecking=no -P $DEPLOYMENT_PORT ~/build/libs/*.jar $DEPLOYMENT_URL
+          command: scp -o StrictHostKeyChecking=no -P $DEPLOYMENT_PORT ./build/libs/*.jar $DEPLOYMENT_URL
 workflows:
   version: 2
   commit-workflow:
