@@ -19,28 +19,29 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
-public class MessageControllerTest {
+public class LoginWhatsappControllerTest {
 
     @Autowired private MockMvc mockMvc;
 
-    @Autowired private LinkedBlockingQueue<SendMessageRequest> messageQueue;
-
-    @MockBean private SendMessageConsumer mockSendMessageConsumer;
+    @MockBean private WhatsappWebAgent whatsappWebAgent;
 
     @Test
-    public void sendMessage_shouldPutIntoMessageQueue() throws Exception  {
-        // execute
-        this.mockMvc.perform(
-            get("/sendto/12345678").param("message","abc%0Adef")
-        ).andExpect(status().isOk());
+    public void loginBarcode_shouldGivenBarcodeImage() throws Exception {
+        when(whatsappWebAgent.getLoginBarcode()).thenReturn("http://testing.com/img.jpg");
 
-        SendMessageRequest requestMessage = messageQueue.take();
-        assertEquals("12345678", requestMessage.phoneNumber);
-        assertEquals("abc%0Adef", requestMessage.message);
+        MvcResult result = this.mockMvc.perform(
+                get("/login/barcode")
+        )
+                .andExpect(status().isOk())
+                .andExpect(view().name("barcode"))
+                .andReturn();
+
+        assertEquals("http://testing.com/img.jpg", result.getModelAndView().getModelMap().get("barcode"));
     }
 
 }

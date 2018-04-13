@@ -1,0 +1,31 @@
+package com.masteryoim.whatsapp.controller;
+
+import com.masteryoim.whatsapp.service.WhatsappWebAgent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@RequestMapping("/login")
+@Controller
+public class LoginWhatsappController {
+    private static Logger log = LoggerFactory.getLogger(LoginWhatsappController.class);
+
+    WhatsappWebAgent whatsappWebAgent;
+
+    @Autowired
+    public LoginWhatsappController(WhatsappWebAgent whatsappWebAgent) {
+        this.whatsappWebAgent = whatsappWebAgent;
+    }
+
+    @RequestMapping(value = "/barcode")
+    public String loginBarcode(ModelMap model) {
+        log.info("get login barcode");
+
+        model.put("barcode", whatsappWebAgent.getLoginBarcode());
+        return "barcode";
+    }
+}

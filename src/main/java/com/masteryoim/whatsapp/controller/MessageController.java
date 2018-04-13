@@ -1,6 +1,7 @@
 package com.masteryoim.whatsapp.controller;
 
 import com.masteryoim.whatsapp.model.SendMessageRequest;
+import com.masteryoim.whatsapp.service.WhatsappWebAgent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +21,13 @@ public class MessageController {
     private static Logger log = LoggerFactory.getLogger(MessageController .class);
 
     LinkedBlockingQueue<SendMessageRequest> messageQueue;
+    WhatsappWebAgent whatsappWebAgent;
 
     @Autowired
-    public MessageController(LinkedBlockingQueue<SendMessageRequest> messageQueue) {
+    public MessageController(LinkedBlockingQueue<SendMessageRequest> messageQueue,
+                             WhatsappWebAgent whatsappWebAgent) {
         this.messageQueue = messageQueue;
+        this.whatsappWebAgent = whatsappWebAgent;
     }
 
     @RequestMapping(value = "/sendto/{phoneNumber}", method = GET)
@@ -35,5 +39,11 @@ public class MessageController {
         } else {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("failed to process");
         }
+    }
+
+    @RequestMapping(value = "/barcode/url")
+    public String loginBarcodeUrl() {
+        log.info("get login barcode url");
+        return whatsappWebAgent.getLoginBarcode();
     }
 }
