@@ -1,6 +1,7 @@
 package com.masteryoim.whatsapp.service;
 
 import com.masteryoim.whatsapp.model.SendMessageRequest;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +33,10 @@ public class SendMessageConsumer {
             while(!Thread.currentThread().isInterrupted()) {
                 try {
                     SendMessageRequest request = queue.take();
-                    agent.sendMsg(request.phoneNumber, request.message);
+                    if (StringUtils.isNotBlank(request.groupName))
+                        agent.sendToGroup(request.groupName, request.message);
+                    else
+                        agent.sendMsg(request.phoneNumber, request.message);
                 } catch (Exception e) {
                     log.error("Error when sending message", e);
                 }

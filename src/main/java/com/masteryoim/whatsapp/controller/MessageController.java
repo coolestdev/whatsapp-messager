@@ -27,10 +27,21 @@ public class MessageController {
     }
 
     @RequestMapping(value = "/sendto/{phoneNumber}", method = GET)
-    public ResponseEntity sendMessage(@PathVariable String phoneNumber, @RequestParam(value = "message", defaultValue = "") String message) {
+    public ResponseEntity sendMessageToPhone(@PathVariable String phoneNumber, @RequestParam(value = "message", defaultValue = "") String message) {
         log.info("send {} to {}", message, phoneNumber);
 
-        if (messageQueue.offer(new SendMessageRequest(phoneNumber, message))) {
+        if (messageQueue.offer(SendMessageRequest.buildRequestByPhoneNumber(phoneNumber, message))) {
+            return ResponseEntity.ok("request received");
+        } else {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("failed to process");
+        }
+    }
+
+    @RequestMapping(value = "/sendtogroup/{groupName}", method = GET)
+    public ResponseEntity sendMessageToGroup(@PathVariable String groupName, @RequestParam(value = "message", defaultValue = "") String message) {
+        log.info("send {} to group {}", message, groupName);
+
+        if (messageQueue.offer(SendMessageRequest.buildRequestByGroupName(groupName, message))) {
             return ResponseEntity.ok("request received");
         } else {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("failed to process");

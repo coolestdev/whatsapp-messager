@@ -22,13 +22,30 @@ public class SendMessageConsumerTest {
 
         SendMessageConsumer consumer = new SendMessageConsumer(queue, mockAgent);
         consumer.startListeningRequest();
-        queue.offer(new SendMessageRequest("12345678", "test1"));
-        queue.offer(new SendMessageRequest("12345678", "test2"));
+        queue.offer(SendMessageRequest.buildRequestByPhoneNumber("12345678", "test1"));
+        queue.offer(SendMessageRequest.buildRequestByPhoneNumber("12345678", "test2"));
 
         while (queue.size() > 0) {
             log.info("{}", queue.size());
             Thread.sleep(100);
         }
         verify(mockAgent, times(2)).sendMsg(any(), any());
+    }
+
+    @Test
+    public void startListeningRequest_shouldCallSendToGroupByMessage() throws InterruptedException {
+        LinkedBlockingQueue<SendMessageRequest> queue = new LinkedBlockingQueue<>();
+        WhatsappWebAgent mockAgent = Mockito.mock(WhatsappWebAgent.class);
+
+        SendMessageConsumer consumer = new SendMessageConsumer(queue, mockAgent);
+        consumer.startListeningRequest();
+        queue.offer(SendMessageRequest.buildRequestByGroupName("Group XYZ", "test1"));
+        queue.offer(SendMessageRequest.buildRequestByGroupName("Group ABC", "test2"));
+
+        while (queue.size() > 0) {
+            log.info("{}", queue.size());
+            Thread.sleep(100);
+        }
+        verify(mockAgent, times(2)).sendToGroup(any(), any());
     }
 }

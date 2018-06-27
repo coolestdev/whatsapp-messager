@@ -53,6 +53,47 @@ public class WhatsappWebAgent {
         remoteWebDriver.quit();
     }
 
+    private void openGroup(String groupName) {
+        WebElement groupNameInput = waitAndGetWebElement("//*[@id='app']//label//input[@type='text']");
+        groupNameInput.sendKeys(groupName);
+
+        WebElement group = waitAndGetWebElement("//*[@id='app']//span[@title='" + groupName + "']");
+        group.click();
+
+        WebElement button = waitAndGetWebElement("//*[@id='app']//div[@role='button']");
+        button.click();
+    }
+
+    private WebElement waitAndGetWebElement(String xPath) {
+        (new WebDriverWait(remoteWebDriver, 10)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(xPath)));
+        return remoteWebDriver.findElement(By.xpath(xPath));
+    }
+
+    public boolean sendToGroup(String groupName, String msg) {
+        log.info("sendToGroup [{}] to [{}]", msg, groupName);
+
+        if(!isLoggedIn()) return false;
+        if(StringUtils.isEmpty(groupName)) return false;
+
+        String apiUrl = String.format(SEND_MSG_SYNTAX, "", msg);
+        remoteWebDriver.navigate().to(apiUrl);
+
+        //after the page load, if the phone is correct, the send button should show
+        try{
+            openGroup(groupName);
+            clickSend();
+            return true;
+        } catch (UnhandledAlertException e) {
+            log.info("Accept unhandled alert");
+            remoteWebDriver.switchTo().alert().accept();
+            clickSend();
+            return true;
+        } catch(NoSuchElementException e) {
+            log.error("cannot find the send button");
+            return false;
+        }
+    }
+
     public Boolean sendMsg(String phoneNumber, String msg) {
         log.info("sendMsg [{}] to [{}]", msg, phoneNumber);
 
@@ -67,27 +108,6 @@ public class WhatsappWebAgent {
 
         String apiUrl = String.format(SEND_MSG_SYNTAX, phoneNumber, msg);
         remoteWebDriver.navigate().to(apiUrl);
-
-        /*try {
-            (new WebDriverWait(remoteWebDriver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.id(ACTION_BUTTON_ID)));
-            WebElement action = remoteWebDriver.findElement(By.id(ACTION_BUTTON_ID));
-
-            logger.info("action button click");
-
-            action.click();
-        } catch(Exception e) {
-            logger.error("cannot find the action button");
-            return false;
-        }
-
-        //wait for the loading
-        try {
-            (new WebDriverWait(remoteWebDriver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.id(START_UP_ID)));
-            (new WebDriverWait(remoteWebDriver, 30)).until(ExpectedConditions.invisibilityOfElementLocated(By.id(START_UP_ID)));
-        } catch(Exception e) {
-            logger.error("the loading screen does not disappear after 30s");
-            return false;
-        }*/
 
         //after the page load, if the phone is correct, the send button should show
         try{
