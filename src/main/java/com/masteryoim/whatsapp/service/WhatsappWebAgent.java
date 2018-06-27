@@ -157,7 +157,7 @@ public class WhatsappWebAgent {
         return false;
     }
 
-    private static RemoteWebDriver getExistingRemoteDriver() {
+    private RemoteWebDriver getExistingRemoteDriver() {
         RemoteWebDriver driver = null;
 
         SessionId sessionId = deserializeSessionId();
@@ -191,12 +191,30 @@ public class WhatsappWebAgent {
         return driver;
     }
 
-    private static void loadWhatsappPage(RemoteWebDriver driver){
+    private void loadWhatsappPage(RemoteWebDriver driver){
         driver.navigate().to(WHATSAPP_SITE);
         (new WebDriverWait(driver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(LOGIN_BARCODE_IMG_XPATH)));
     }
 
-    private static RemoteWebDriver createNewRemoteDriver() {
+    public String getLoginBarcode() {
+        if (isLoggedIn())
+            return "No url. Already Login.";
+
+        if (remoteWebDriver == null)
+            return "No url. Remote web driver not ready";
+
+        try {
+            loadWhatsappPage(remoteWebDriver);
+            WebElement img  = remoteWebDriver.findElement(By.xpath(LOGIN_BARCODE_IMG_XPATH));
+            String barcode = img.getAttribute("src");
+            log.info("login barcode: {}", barcode);
+            return barcode;
+        } catch(Exception e) {
+            return "Cannot get login barcode. " + e.getMessage();
+        }
+    }
+
+    private RemoteWebDriver createNewRemoteDriver() {
         RemoteWebDriver driver = new ChromeDriver();
         loadWhatsappPage(driver);
         serializeSessionId(driver.getSessionId());
