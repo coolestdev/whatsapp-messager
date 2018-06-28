@@ -1,10 +1,7 @@
 package com.masteryoim.whatsapp.service;
 
 import org.apache.commons.lang3.StringUtils;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.UnhandledAlertException;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.remote.*;
 import org.openqa.selenium.remote.http.JsonHttpCommandCodec;
@@ -53,20 +50,43 @@ public class WhatsappWebAgent {
         remoteWebDriver.quit();
     }
 
-    private void openGroup(String groupName) {
+    private void openGroupAndSend(String groupName, String message) {
         WebElement groupNameInput = waitAndGetWebElement("//*[@id='app']//label//input[@type='text']");
         groupNameInput.sendKeys(groupName);
+        log.info("inputted group name");
 
-        WebElement group = waitAndGetWebElement("//*[@id='app']//span[@title='" + groupName + "']");
+        By groupSelector = By.xpath("//*[@class='_2EXPL aZ91u']");
+        (new WebDriverWait(remoteWebDriver, 10)).until(ExpectedConditions.numberOfElementsToBe(groupSelector, 1));
+        WebElement group = waitAndGetWebElement(groupSelector);
         group.click();
+        log.info("group is selected");
 
-        WebElement button = waitAndGetWebElement("//*[@id='app']//div[@role='button']");
+        By buttonSelector = By.xpath("//*[@id='app']//div[@role='button']");
+        (new WebDriverWait(remoteWebDriver, 10)).until(ExpectedConditions.elementToBeClickable(buttonSelector));
+        WebElement button = waitAndGetWebElement(buttonSelector);
         button.click();
+        log.info("clicked send to which group button");
+
+        By textboxSelector = By.className("_2S1VP");
+        WebElement textbox = waitAndGetWebElement(textboxSelector);
+        textbox.sendKeys(Keys.ENTER);
     }
 
     private WebElement waitAndGetWebElement(String xPath) {
-        (new WebDriverWait(remoteWebDriver, 10)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(xPath)));
-        return remoteWebDriver.findElement(By.xpath(xPath));
+        try{
+            (new WebDriverWait(remoteWebDriver, 10)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(xPath)));
+            return remoteWebDriver.findElement(By.xpath(xPath));
+        } catch (UnhandledAlertException e) {
+            log.info("Accept unhandled alert");
+            remoteWebDriver.switchTo().alert().accept();
+            (new WebDriverWait(remoteWebDriver, 10)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(xPath)));
+            return remoteWebDriver.findElement(By.xpath(xPath));
+        }
+    }
+
+    private WebElement waitAndGetWebElement(By selector) {
+        (new WebDriverWait(remoteWebDriver, 10)).until(ExpectedConditions.visibilityOfElementLocated(selector));
+        return remoteWebDriver.findElement(selector);
     }
 
     public boolean sendToGroup(String groupName, String msg) {
@@ -80,13 +100,7 @@ public class WhatsappWebAgent {
 
         //after the page load, if the phone is correct, the send button should show
         try{
-            openGroup(groupName);
-            clickSend();
-            return true;
-        } catch (UnhandledAlertException e) {
-            log.info("Accept unhandled alert");
-            remoteWebDriver.switchTo().alert().accept();
-            clickSend();
+            openGroupAndSend(groupName, msg);
             return true;
         } catch(NoSuchElementException e) {
             log.error("cannot find the send button");
