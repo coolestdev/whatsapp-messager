@@ -27,7 +27,7 @@ public class WhatsappWebAgent {
     private static final String SEND_MSG_SYNTAX = WHATSAPP_API + "/send?phone=%s&text=%s";
     private static final String LOGIN_BARCODE_IMG_XPATH = "//img[@alt=\"Scan me!\"]";
     private static final String ACTION_BUTTON_ID = "action-button";
-    private static final String SEND_BUTTON_CLASS = "_2lkdt";
+    private static final String SEND_BUTTON_CLASS = "_35EW6";
     private static final String INVALID_PHONE_BUTTON_DIV_CLASS = "_3QNwO";
     private static final String INVALID_PHONE_BUTTON_XPATH = "//div[@role=\"button\"]";
     private static final String START_UP_ID = "startup";
