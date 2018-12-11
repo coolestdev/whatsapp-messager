@@ -44,4 +44,24 @@ public class LoginWhatsappControllerTest {
         assertEquals("http://testing.com/img.jpg", result.getModelAndView().getModelMap().get("barcode"));
     }
 
+    @Test
+    public void check_givenNotLogin_shouldFail() throws Exception {
+        when(whatsappWebAgent.isLoggedIn()).thenReturn(false);
+
+        this.mockMvc
+                .perform(get("/login/check"))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+    }
+
+    @Test
+    public void check_givenIsLogin_shouldSuccess() throws Exception {
+        when(whatsappWebAgent.isLoggedIn()).thenReturn(true);
+
+        this.mockMvc
+                .perform(get("/login/check"))
+                .andExpect(status().isOk())
+                .andReturn();
+    }
+
 }
