@@ -3,9 +3,8 @@ package com.masteryoim.whatsapp.service;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.remote.*;
-import org.openqa.selenium.remote.http.JsonHttpCommandCodec;
-import org.openqa.selenium.remote.http.JsonHttpResponseCodec;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
@@ -14,10 +13,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.io.*;
-import java.lang.reflect.Field;
-import java.net.URL;
-import java.util.Collections;
 
 @Service
 public class WhatsappWebAgent {
@@ -30,22 +25,23 @@ public class WhatsappWebAgent {
     private static final String INVALID_PHONE_BUTTON_DIV_CLASS = "_3QNwO";
     private static final String INVALID_PHONE_BUTTON_XPATH = "//div[@role=\"button\"]";
 
-    @Value("${chromedrive.path}")
-    private String chromeDrivePath;
-    private RemoteWebDriver remoteWebDriver = null;
+    @Value("${chromedrive.path}") private String chromeDrivePath;
+    @Value("${chrome.user.folder.path}") private String userFolderPath;
+
+    private RemoteWebDriver webDriver = null;
 
     @PostConstruct
     public void init() {
         try {
             System.setProperty("webdriver.chrome.driver", this.chromeDrivePath);
-            remoteWebDriver = getExistingRemoteDriver();
+            webDriver = createNewRemoteDriver();
         } catch (Exception e) {
             log.error("Error in init remote driver", e);
         }
     }
 
     public void close(){
-        remoteWebDriver.quit();
+        webDriver.quit();
     }
 
     private void openGroupAndSend(String groupName, String message) {
@@ -54,13 +50,13 @@ public class WhatsappWebAgent {
         log.info("inputted group name");
 
         By groupSelector = By.xpath("//*[@class='_2EXPL aZ91u']");
-        (new WebDriverWait(remoteWebDriver, 10)).until(ExpectedConditions.numberOfElementsToBe(groupSelector, 1));
+        (new WebDriverWait(webDriver, 10)).until(ExpectedConditions.numberOfElementsToBe(groupSelector, 1));
         WebElement group = waitAndGetWebElement(groupSelector);
         group.click();
         log.info("group is selected");
 
         By buttonSelector = By.xpath("//*[@id='app']//div[@role='button']");
-        (new WebDriverWait(remoteWebDriver, 10)).until(ExpectedConditions.elementToBeClickable(buttonSelector));
+        (new WebDriverWait(webDriver, 10)).until(ExpectedConditions.elementToBeClickable(buttonSelector));
         WebElement button = waitAndGetWebElement(buttonSelector);
         button.click();
         log.info("clicked send to which group button");
@@ -72,19 +68,19 @@ public class WhatsappWebAgent {
 
     private WebElement waitAndGetWebElement(String xPath) {
         try{
-            (new WebDriverWait(remoteWebDriver, 10)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(xPath)));
-            return remoteWebDriver.findElement(By.xpath(xPath));
+            (new WebDriverWait(webDriver, 10)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(xPath)));
+            return webDriver.findElement(By.xpath(xPath));
         } catch (UnhandledAlertException e) {
             log.info("Accept unhandled alert");
-            remoteWebDriver.switchTo().alert().accept();
-            (new WebDriverWait(remoteWebDriver, 10)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(xPath)));
-            return remoteWebDriver.findElement(By.xpath(xPath));
+            webDriver.switchTo().alert().accept();
+            (new WebDriverWait(webDriver, 10)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(xPath)));
+            return webDriver.findElement(By.xpath(xPath));
         }
     }
 
     private WebElement waitAndGetWebElement(By selector) {
-        (new WebDriverWait(remoteWebDriver, 10)).until(ExpectedConditions.visibilityOfElementLocated(selector));
-        return remoteWebDriver.findElement(selector);
+        (new WebDriverWait(webDriver, 10)).until(ExpectedConditions.visibilityOfElementLocated(selector));
+        return webDriver.findElement(selector);
     }
 
     public boolean sendToGroup(String groupName, String msg) {
@@ -94,7 +90,7 @@ public class WhatsappWebAgent {
         if(StringUtils.isEmpty(groupName)) return false;
 
         String apiUrl = String.format(SEND_MSG_SYNTAX, "", msg);
-        remoteWebDriver.navigate().to(apiUrl);
+        webDriver.navigate().to(apiUrl);
 
         //after the page load, if the phone is correct, the send button should show
         try{
@@ -119,7 +115,7 @@ public class WhatsappWebAgent {
         }
 
         String apiUrl = String.format(SEND_MSG_SYNTAX, phoneNumber, msg);
-        remoteWebDriver.navigate().to(apiUrl);
+        webDriver.navigate().to(apiUrl);
 
         //after the page load, if the phone is correct, the send button should show
         try{
@@ -127,7 +123,7 @@ public class WhatsappWebAgent {
             return true;
         } catch (UnhandledAlertException e) {
             log.info("Accept unhandled alert");
-            remoteWebDriver.switchTo().alert().accept();
+            webDriver.switchTo().alert().accept();
             clickSend();
             return true;
         } catch(NoSuchElementException e) {
@@ -135,8 +131,8 @@ public class WhatsappWebAgent {
             log.error("cannot find the send button");
 
             try{
-                (new WebDriverWait(remoteWebDriver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.className(INVALID_PHONE_BUTTON_DIV_CLASS)));
-                WebElement invalidDiv = remoteWebDriver.findElement(By.className(INVALID_PHONE_BUTTON_DIV_CLASS));
+                (new WebDriverWait(webDriver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.className(INVALID_PHONE_BUTTON_DIV_CLASS)));
+                WebElement invalidDiv = webDriver.findElement(By.className(INVALID_PHONE_BUTTON_DIV_CLASS));
                 WebElement invalid = invalidDiv.findElement(By.xpath(INVALID_PHONE_BUTTON_XPATH));
                 invalid.click();
             } catch(NoSuchElementException e2) {
@@ -149,8 +145,8 @@ public class WhatsappWebAgent {
     }
 
     private void clickSend() {
-        (new WebDriverWait(remoteWebDriver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.className(SEND_BUTTON_CLASS)));
-        WebElement send = remoteWebDriver.findElement(By.className(SEND_BUTTON_CLASS));
+        (new WebDriverWait(webDriver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.className(SEND_BUTTON_CLASS)));
+        WebElement send = webDriver.findElement(By.className(SEND_BUTTON_CLASS));
 
         // retry loop to click send button until fully loaded
         int retry = 0;
@@ -175,7 +171,7 @@ public class WhatsappWebAgent {
     //check if the screen contain the element with id = side
     public Boolean isLoggedIn(){
         try{
-            WebElement e  = remoteWebDriver.findElement(By.id("side"));
+            WebElement e  = webDriver.findElement(By.id("side"));
 
             if(e!=null){
                 return true;
@@ -187,40 +183,6 @@ public class WhatsappWebAgent {
         return false;
     }
 
-    private RemoteWebDriver getExistingRemoteDriver() {
-        RemoteWebDriver driver = null;
-
-        SessionId sessionId = deserializeSessionId();
-        URL url = deserializeUrl();
-
-        if(sessionId!=null && url!=null) {
-            driver = createDriverFromSession(sessionId, url);
-
-            //test the driver, if the driver not found it will throw exception
-            try {
-                String currentUrl = driver.getCurrentUrl();
-                if(currentUrl.equals(WHATSAPP_SITE)) {
-                    try {
-                        driver.findElement(By.id("side"));
-                        log.info("whatapp is logged in");
-                    } catch(NoSuchElementException e) {
-                        log.error("whatapp is not logged in");
-                        loadWhatsappPage(driver);
-                    }
-                } else {
-                    loadWhatsappPage(driver);
-                }
-            } catch(Exception e) {
-                log.error(e.getMessage(), e);
-                driver = createNewRemoteDriver();
-            }
-        } else {
-            driver = createNewRemoteDriver();
-        }
-
-        return driver;
-    }
-
     private void loadWhatsappPage(RemoteWebDriver driver){
         driver.navigate().to(WHATSAPP_SITE);
         (new WebDriverWait(driver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(LOGIN_BARCODE_IMG_XPATH)));
@@ -230,12 +192,12 @@ public class WhatsappWebAgent {
         if (isLoggedIn())
             return "No url. Already Login.";
 
-        if (remoteWebDriver == null)
+        if (webDriver == null)
             return "No url. Remote web driver not ready";
 
         try {
-            loadWhatsappPage(remoteWebDriver);
-            WebElement img  = remoteWebDriver.findElement(By.xpath(LOGIN_BARCODE_IMG_XPATH));
+            loadWhatsappPage(webDriver);
+            WebElement img  = webDriver.findElement(By.xpath(LOGIN_BARCODE_IMG_XPATH));
             String barcode = img.getAttribute("src");
             log.info("login barcode: {}", barcode);
             return barcode;
@@ -245,108 +207,12 @@ public class WhatsappWebAgent {
     }
 
     private RemoteWebDriver createNewRemoteDriver() {
-        RemoteWebDriver driver = new ChromeDriver();
-        loadWhatsappPage(driver);
-        serializeSessionId(driver.getSessionId());
-        HttpCommandExecutor executor = (HttpCommandExecutor) driver.getCommandExecutor();
-        serializeUrl(executor.getAddressOfRemoteServer());
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("user-data-dir=" + userFolderPath);
+        RemoteWebDriver driver = new ChromeDriver(options);
 
+        loadWhatsappPage(driver);
         return driver;
     }
 
-    private static void serializeSessionId(SessionId sessionId){
-        try {
-            FileOutputStream fileOut = new FileOutputStream("./sessionId.ser");
-            ObjectOutputStream out = new ObjectOutputStream(fileOut);
-            out.writeObject(sessionId.toString());
-            out.close();
-            fileOut.close();
-            log.info("Serialized sessionId is saved");
-        } catch (IOException e) {
-            log.error("Error serialize session id", e);
-        }
-    }
-
-    private static void serializeUrl(URL url){
-        try {
-            FileOutputStream fileOut = new FileOutputStream("./url.ser");
-            ObjectOutputStream out = new ObjectOutputStream(fileOut);
-            out.writeObject(url);
-            out.close();
-            fileOut.close();
-            log.info("Serialized url is saved");
-        } catch (IOException e) {
-            log.error("Error in serialize url", e);
-        }
-    }
-
-    private static SessionId deserializeSessionId(){
-        SessionId sessionId = null;
-        try {
-            FileInputStream fileIn = new FileInputStream("./sessionId.ser");
-            ObjectInputStream in = new ObjectInputStream(fileIn);
-            String sessionStr = (String) in.readObject();
-            sessionId = new SessionId(sessionStr);
-            in.close();
-            fileIn.close();
-        } catch (IOException e) {
-            log.error("Error in deserialize session id", e);
-        } catch (ClassNotFoundException e) {
-            log.error("sessionId.ser not found", e);
-        }
-        return sessionId;
-    }
-
-    private static URL deserializeUrl(){
-        URL url = null;
-        try {
-            FileInputStream fileIn = new FileInputStream("./url.ser");
-            ObjectInputStream in = new ObjectInputStream(fileIn);
-            url = (URL) in.readObject();
-            in.close();
-            fileIn.close();
-        } catch (IOException e) {
-            log.error("Error in deserialize url", e);
-        } catch (ClassNotFoundException e) {
-            log.error("url.ser not found", e);
-        }
-        return url;
-    }
-
-    //copy from http://tarunlalwani.com/post/reusing-existing-browser-session-selenium-java/
-    private static RemoteWebDriver createDriverFromSession(final SessionId sessionId, URL command_executor){
-
-        CommandExecutor executor = new HttpCommandExecutor(command_executor) {
-
-            @Override
-            public Response execute(Command command) throws IOException {
-                Response response = null;
-                if (command.getName() == "newSession") {
-                    response = new Response();
-                    response.setSessionId(sessionId.toString());
-                    response.setStatus(0);
-                    response.setValue(Collections.<String, String>emptyMap());
-
-                    try {
-                        Field commandCodec = null;
-                        commandCodec = this.getClass().getSuperclass().getDeclaredField("commandCodec");
-                        commandCodec.setAccessible(true);
-                        commandCodec.set(this, new JsonHttpCommandCodec());
-
-                        Field responseCodec = null;
-                        responseCodec = this.getClass().getSuperclass().getDeclaredField("responseCodec");
-                        responseCodec.setAccessible(true);
-                        responseCodec.set(this, new JsonHttpResponseCodec());
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        log.error("Error in create driver from session", e);
-                    }
-                } else {
-                    response = super.execute(command);
-                }
-                return response;
-            }
-        };
-
-        return new RemoteWebDriver(executor, new DesiredCapabilities());
-    }
 }
