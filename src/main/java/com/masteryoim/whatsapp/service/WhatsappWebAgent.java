@@ -172,14 +172,10 @@ public class WhatsappWebAgent {
     public Boolean isLoggedIn(){
         try{
             WebElement e  = webDriver.findElement(By.id("side"));
-
-            if(e!=null){
-                return true;
-            }
+            return e != null;
         } catch(NoSuchElementException e) {
             log.error("Element with id=side cannnot be found");
         }
-
         return false;
     }
 
@@ -189,11 +185,11 @@ public class WhatsappWebAgent {
     }
 
     public String getLoginBarcode() {
-        if (isLoggedIn())
-            return "No url. Already Login.";
-
         if (webDriver == null)
             return "No url. Remote web driver not ready";
+
+        if (isLoggedIn())
+            return "No url. Already Login.";
 
         try {
             loadWhatsappPage(webDriver);
