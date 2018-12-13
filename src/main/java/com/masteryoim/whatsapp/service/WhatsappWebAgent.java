@@ -26,11 +26,9 @@ public class WhatsappWebAgent {
     private static final String WHATSAPP_API = "https://web.whatsapp.com";
     private static final String SEND_MSG_SYNTAX = WHATSAPP_API + "/send?phone=%s&text=%s";
     private static final String LOGIN_BARCODE_IMG_XPATH = "//img[@alt=\"Scan me!\"]";
-    private static final String ACTION_BUTTON_ID = "action-button";
     private static final String SEND_BUTTON_CLASS = "_35EW6";
     private static final String INVALID_PHONE_BUTTON_DIV_CLASS = "_3QNwO";
     private static final String INVALID_PHONE_BUTTON_XPATH = "//div[@role=\"button\"]";
-    private static final String START_UP_ID = "startup";
 
     @Value("${chromedrive.path}")
     private String chromeDrivePath;
@@ -153,7 +151,25 @@ public class WhatsappWebAgent {
     private void clickSend() {
         (new WebDriverWait(remoteWebDriver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.className(SEND_BUTTON_CLASS)));
         WebElement send = remoteWebDriver.findElement(By.className(SEND_BUTTON_CLASS));
-        send.click();
+
+        // retry loop to click send button until fully loaded
+        int retry = 0;
+        while (retry < 30) {
+            retry++;
+            try {
+                log.info("click send");
+                send.click();
+                retry = Integer.MAX_VALUE;
+            } catch (WebDriverException e) {
+                if (e.toString().contains("is not clickable")) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e2) {
+                        log.error("interrupted exception", e2);
+                    }
+                }
+            }
+        }
     }
 
     //check if the screen contain the element with id = side
