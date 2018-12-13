@@ -181,7 +181,11 @@ public class WhatsappWebAgent {
 
     private void loadWhatsappPage(RemoteWebDriver driver){
         driver.navigate().to(WHATSAPP_SITE);
-        (new WebDriverWait(driver, 30)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(LOGIN_BARCODE_IMG_XPATH)));
+        try {
+            (new WebDriverWait(driver, 10)).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(LOGIN_BARCODE_IMG_XPATH)));
+        } catch (Exception e) {
+            log.info("No login barcode provided");
+        }
     }
 
     public String getLoginBarcode() {
